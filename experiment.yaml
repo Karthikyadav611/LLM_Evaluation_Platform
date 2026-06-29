@@ -1,0 +1,15 @@
+dataset: data/golden_dataset.json
+test_limit: 3
+temperature: 0.0
+max_output_tokens: 1024
+prompts:
+  baseline:
+    path: prompts/baseline_prompt.txt
+  candidate:
+    path: prompts/candidate_prompt.txt
+models:
+  - provider: groq
+    model: llama-3.1-8b-instant
+judge:
+  provider: groq
+  model: llama-3.1-8b-instant

@@ -1,0 +1,33 @@
+[project]
+name = "llm-eval-cicd"
+version = "0.1.0"
+description = "Self-hosted multi-provider LLM evaluation and regression-testing platform."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/run_evaluation.py" = ["E402"]
+"scripts/run_matrix.py" = ["E402"]
+"scripts/show_latest_report.py" = ["E402"]
+"scripts/validate_project.py" = ["E402"]
+"dashboard/streamlit_app.py" = ["E402"]
+"dashboard/pages/*.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_configs = true
+check_untyped_defs = true
+no_implicit_optional = true
+disable_error_code = ["import-untyped"]

@@ -1,0 +1,23 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GENERATION_PROVIDER: ${GENERATION_PROVIDER:-groq}
+      GENERATION_MODEL: ${GENERATION_MODEL:-llama-3.1-8b-instant}
+      JUDGE_PROVIDER: ${JUDGE_PROVIDER:-groq}
+      JUDGE_MODEL: ${JUDGE_MODEL:-llama-3.1-8b-instant}
+      DATABASE_URL: sqlite:///./data/llm_eval.db
+    volumes:
+      - database:/app/data
+      - reports:/app/reports
+    restart: unless-stopped
+
+volumes:
+  database:
+  reports:

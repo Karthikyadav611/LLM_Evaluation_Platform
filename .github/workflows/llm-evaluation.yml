@@ -1,0 +1,95 @@
+name: LLM Evaluation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      test_limit:
+        description: "Number of tests to run"
+        required: false
+        default: "5"
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    env:
+      TEST_LIMIT: "5"
+      GENERATION_PROVIDER: ${{ vars.GENERATION_PROVIDER || 'groq' }}
+      GENERATION_MODEL: ${{ vars.GENERATION_MODEL || 'llama-3.1-8b-instant' }}
+      JUDGE_PROVIDER: ${{ vars.JUDGE_PROVIDER || 'groq' }}
+      JUDGE_MODEL: ${{ vars.JUDGE_MODEL || 'llama-3.1-8b-instant' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Compile Python files
+        run: python -m compileall .
+
+      - name: Validate project
+        run: python scripts/validate_project.py
+
+      - name: Run unit tests
+        run: pytest -q
+
+      - name: Run Ruff
+        run: ruff check .
+
+      - name: Run MyPy
+        run: mypy app scripts dashboard
+
+      - name: Run limited live evaluation
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set +e
+          python -m scripts.run_evaluation --test-limit "${{ github.event.inputs.test_limit || env.TEST_LIMIT }}" --no-delay
+          status=$?
+          echo "llm_eval_exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit $status
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: reports/
+          if-no-files-found: ignore
+
+      - name: GitHub Job Summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          summary_path = Path("reports/experiment_summary.json")
+          if not summary_path.exists():
+              summary_path = Path("reports/evaluation_summary.json")
+          data = json.loads(summary_path.read_text()) if summary_path.exists() else {}
+          candidate = data.get("candidate_metrics", {})
+          lines = [
+              "# LLM Evaluation",
+              f"- Pipeline status: {data.get('pipeline_status', 'NOT_RUN')}",
+              f"- Pass rate: {candidate.get('pass_rate')}",
+              f"- Correctness: {candidate.get('average_correctness')}",
+              f"- Faithfulness: {candidate.get('average_faithfulness')}",
+              f"- Hallucination: {candidate.get('hallucination_rate')}",
+              f"- Safety: {candidate.get('safety_pass_rate')}",
+              f"- P95 latency: {candidate.get('p95_latency')}",
+              f"- Regressions: {len(data.get('regressed_test_ids', []))}",
+          ]
+          Path(__import__("os").environ["GITHUB_STEP_SUMMARY"]).write_text("\n".join(lines))
+          PY
