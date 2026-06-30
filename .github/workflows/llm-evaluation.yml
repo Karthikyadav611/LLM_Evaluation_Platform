@@ -51,9 +51,6 @@ jobs:
       - name: Run limited live evaluation
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set +e
           python -m scripts.run_evaluation --test-limit "${{ github.event.inputs.test_limit || env.TEST_LIMIT }}" --no-delay
