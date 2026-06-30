@@ -1,178 +1,407 @@
-# LLM Eval CI/CD
+# 🚀 LLM Evaluation Platform
 
-A lightweight, self-hosted, multi-provider LLM regression-testing and evaluation platform for developers and small teams.
+A comprehensive **Multi-Provider LLM Evaluation & Regression Testing Platform** for evaluating, comparing, and benchmarking Large Language Models (LLMs) and prompts across multiple providers.
 
-The project compares prompts and models against golden datasets, scores deterministic and judge-based metrics, writes CI-friendly reports, exposes a Streamlit dashboard, and can block deployments through configurable quality gates.
+🌐 **Live Demo:** https://llmevaluationplatform-m.streamlit.app/
 
-## How It Fits
+---
 
-- **Promptfoo** is broader for prompt test scripting; this project focuses on a small Python-first regression harness with reports, dashboard, SQLite history, and CI gates.
-- **LangSmith** and **Braintrust** provide hosted observability and evaluation platforms; this project is self-hosted and intentionally lightweight.
-- **Phoenix** is strong for tracing and observability; this project centers on repeatable prompt/model regression tests and deployment gates.
+## 📌 Overview
 
-It is not an enterprise evaluation suite. There is no billing, RBAC, Kubernetes orchestration, or distributed queue.
+LLM Evaluation Platform helps developers, AI engineers, and prompt engineers measure the quality of LLM responses using automated evaluation pipelines.
 
-## Architecture
+Instead of manually checking responses, the platform automatically:
 
-```text
-app/
-  providers/      Groq, Gemini, OpenAI, Anthropic provider adapters
-  datasets/       JSON/CSV loading, validation, summaries, draft generation helpers
-  prompts/        prompt loading and hashing
-  evaluators/     deterministic evaluator registry and LLM judge bridge
-  experiments/    prompt comparison, model comparison, matrix expansion, summaries
-  storage/        SQLite persistence via SQLAlchemy
-  reports/        CSV/JSON/ZIP helpers
-dashboard/        Streamlit multi-page dashboard
-scripts/          CLI entry points and offline validation
-tests/            offline unit tests with fake providers
+- Generates responses from selected LLMs
+- Evaluates them using an LLM Judge
+- Compares prompts or models
+- Calculates quality metrics
+- Detects regressions
+- Generates downloadable reports
+- Displays experiment history
+- Supports CI/CD quality gates
+
+---
+
+# ✨ Features
+
+## 🤖 Multi-Provider Support
+
+Choose your preferred LLM provider.
+
+Supported providers include:
+
+- Groq
+- Google Gemini
+- OpenAI (Extensible)
+- Anthropic (Extensible)
+- Ollama (Future)
+- Any OpenAI-compatible endpoint
+
+Users can simply enter their own API key without modifying the code.
+
+---
+
+## 🧠 Flexible Evaluation
+
+Evaluate:
+
+- Prompt A vs Prompt B
+- Model A vs Model B
+- Same model with different prompts
+- Different providers
+- Baseline vs Candidate prompts
+
+Example:
+
+Baseline
+
+```
+Groq
+llama-3.1-8b-instant
 ```
 
-## Supported Providers
+Candidate
 
-Generation and judge providers are configured independently:
+```
+Gemini 2.5 Flash
+```
 
-- `groq` via `groq`
-- `gemini` via `google-genai`
-- `openai` via `openai`
-- `anthropic` via `anthropic`
+---
 
-Environment variables:
+## 📊 Automatic Metrics
+
+The platform measures:
+
+- Pass Rate
+- Correctness
+- Faithfulness
+- Relevancy
+- Semantic Similarity
+- Hallucination Rate
+- Safety
+- Latency
+- Token Usage
+- Estimated Cost (when available)
+
+---
+
+## 📈 Regression Detection
+
+Automatically detects whether a new prompt or model:
+
+✅ Improved
+
+❌ Regressed
+
+⚠️ Introduced hallucinations
+
+⚠️ Became slower
+
+⚠️ Reduced correctness
+
+Perfect for continuous prompt engineering.
+
+---
+
+## 📁 Experiment Tracking
+
+Each evaluation run is saved as a unique experiment.
+
+Example:
+
+```
+reports/
+└── experiments/
+    ├── exp-20260630100302/
+    ├── exp-20260630112110/
+    └── exp-20260630142044/
+```
+
+Each experiment stores:
+
+- experiment_summary.json
+- test_results.csv
+- prompt_comparison.csv
+- model_comparison.csv
+- quality_gates.csv
+- failed_tests.csv
+- fixed_tests.csv
+- regressed_tests.csv
+
+---
+
+## 📦 Downloadable Reports
+
+Download complete evaluation reports as ZIP files containing:
+
+- JSON summaries
+- CSV metrics
+- Failed tests
+- Quality gates
+- Comparison reports
+
+---
+
+## 📚 Experiment History
+
+View all previous evaluations inside the dashboard.
+
+Includes:
+
+- Experiment ID
+- Generator Model
+- Judge Model
+- Pipeline Status
+- Timestamp
+- Metrics
+- Report Location
+
+---
+
+# 📊 Dashboard
+
+The Streamlit dashboard provides:
+
+- Provider Selection
+- API Key Input
+- Prompt Upload
+- Dataset Upload
+- Evaluation Configuration
+- Live Progress
+- Charts
+- Quality Gates
+- Experiment History
+- Report Downloads
+
+---
+
+# 🧪 Evaluation Pipeline
+
+```
+                User
+                  │
+                  ▼
+        Select Generator Model
+                  │
+                  ▼
+          Generate Responses
+                  │
+                  ▼
+            LLM Judge
+                  │
+                  ▼
+      Compute Evaluation Metrics
+                  │
+                  ▼
+      Compare Baseline vs Candidate
+                  │
+                  ▼
+      Detect Regressions
+                  │
+                  ▼
+ Generate Reports + Dashboard Results
+```
+
+---
+
+# 📋 Evaluation Metrics
+
+| Metric | Description |
+|---------|-------------|
+| Correctness | Accuracy of the response |
+| Faithfulness | Whether the answer follows the provided context |
+| Relevancy | Whether the response answers the question |
+| Hallucination | Measures fabricated information |
+| Safety | Checks unsafe outputs |
+| Latency | Response time |
+| Pass Rate | Percentage of successful test cases |
+
+---
+
+# 📂 Project Structure
+
+```
+LLM-Evaluation-Platform/
+
+├── dashboard/
+├── prompts/
+├── datasets/
+├── reports/
+│   └── experiments/
+├── scripts/
+├── tests/
+├── app/
+├── configs/
+├── docs/
+├── .github/
+│   └── workflows/
+├── requirements.txt
+├── Dockerfile
+├── README.md
+└── .env.example
+```
+
+---
+
+# ⚙️ Installation
+
+Clone the repository
 
 ```bash
-GROQ_API_KEY=
-GEMINI_API_KEY=
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
+git clone https://github.com/USERNAME/LLM-Evaluation-Platform.git
 ```
 
-Dashboard API keys are password fields and remain in Streamlit session memory only. They are not written to reports, logs, databases, URLs, caches, or ZIP files.
-
-## Evaluation Modes
-
-- **Prompt comparison:** baseline prompt versus candidate prompt on the same dataset and model.
-- **Model comparison:** multiple models on the same prompt and dataset.
-- **Prompt-model matrix:** every selected prompt/model combination.
-
-The judge is called exactly once for each successful generation. Generation failures and judge failures become `ERROR` rows and do not count as hallucinations, unsafe outputs, or fast latency.
-
-## Dataset Format
-
-JSON and CSV datasets support:
-
-```text
-id, category, difficulty, question, context, expected_answer,
-must_include, must_not_include, expected_behavior, metadata
-```
-
-Allowed `expected_behavior` values are `answer`, `unanswerable`, `clarify`, and `refuse`.
-
-Uploaded dashboard datasets are temporary unless you explicitly save them in your self-hosted environment. Generated datasets are labeled as drafts requiring human review.
-
-## Metrics And Gates
-
-Metrics include keyword checks, forbidden-term checks, expected-behavior checks, semantic similarity, relevancy, faithfulness, correctness, safety, hallucination, latency, token counts, and optional estimated cost.
-
-Quality gates cover pass rate, correctness, relevancy, faithfulness, safety pass rate, hallucination rate, P95 latency, average cost when configured, generation errors, judge errors, valid evaluation ratio, and regressions.
-
-Pipeline exit codes:
-
-- `0` = `PASS`
-- `1` = `FAIL`
-- `2` = `ERROR`
-
-## Local Setup
+Move into the project
 
 ```bash
-pip install -r requirements-dev.txt
-cp .env.example .env
-python scripts/validate_project.py
-pytest -q
-ruff check .
+cd LLM-Evaluation-Platform
 ```
 
-Run prompt comparison:
+Install dependencies
 
 ```bash
-python -m scripts.run_evaluation --test-limit 3
+pip install -r requirements.txt
 ```
 
-Run a matrix experiment:
+Create environment variables
 
-```bash
-python -m scripts.run_matrix --config experiment.yaml
+```
+GROQ_API_KEY=your_key
+GEMINI_API_KEY=your_key
+OPENAI_API_KEY=your_key
 ```
 
-Run the dashboard:
+Run the dashboard
 
 ```bash
 streamlit run dashboard/streamlit_app.py
 ```
 
-## Reports
+---
 
-Reports are written to `reports/`:
+# 🚀 GitHub CI/CD
 
-- `experiment_summary.json`
-- `configuration_results.csv`
-- `test_results.csv`
-- `model_comparison.csv`
-- `prompt_comparison.csv`
-- `quality_gates.csv`
-- `failed_tests.csv`
-- `regressed_tests.csv`
-- `fixed_tests.csv`
+The project includes GitHub Actions for automated evaluation.
 
-Backward-compatible files are also retained:
+Pipeline:
 
-- `evaluation_summary.json`
-- `baseline_evaluation_results.csv`
-- `candidate_evaluation_results.csv`
-- `failed_candidate_tests.csv`
-- `test_level_comparison.csv`
-
-Dashboard report ZIP downloads are created in memory with `io.BytesIO`. Report ZIP upload is only for viewing previous evaluation reports, not source-code project archives, and extraction is protected against path traversal.
-
-## Experiment History
-
-SQLite is the default persistence layer through SQLAlchemy. Configure another database later with:
-
-```bash
-DATABASE_URL=sqlite:///./data/llm_eval.db
+```
+Push Code
+      │
+      ▼
+Run Tests
+      │
+      ▼
+Run LLM Evaluation
+      │
+      ▼
+Generate Reports
+      │
+      ▼
+Quality Gates
+      │
+      ▼
+PASS ✅ / FAIL ❌
 ```
 
-The schema stores experiments, configurations, results, metric summaries, quality gates, and report file metadata. API keys are never stored.
+---
 
-## CI/CD
+# 📊 Sample Workflow
 
-`.github/workflows/test.yml` runs compile, validation, tests, Ruff, and MyPy without real API keys.
+1. Select Generator Model
+2. Select Judge Model
+3. Upload Dataset
+4. Upload Baseline Prompt
+5. Upload Candidate Prompt
+6. Click **Run Evaluation**
+7. Wait for evaluation
+8. View dashboard
+9. Download reports
 
-`.github/workflows/llm-evaluation.yml` runs the same offline checks and then a small live smoke evaluation using repository secrets. Reports are uploaded even when the evaluation returns `FAIL`.
+---
 
-## Docker
+# 💡 Example Use Cases
 
-```bash
-docker compose up --build
-```
+- Prompt Engineering
+- AI Regression Testing
+- LLM Benchmarking
+- Enterprise AI QA
+- RAG Evaluation
+- CI/CD for LLM Applications
+- Model Comparison
+- Prompt Optimization
 
-The image uses `python:3.11-slim`, runs Streamlit as a non-root user, supports runtime environment variables, exposes a health check, and mounts named volumes for SQLite data and reports.
+---
 
-## Security Notes
+# 🛠️ Technology Stack
 
-- `.env` is ignored; `.env.example` is committed.
-- Secret-like errors are sanitized before display.
-- Provider clients are not cached with API keys.
-- Reports and ZIPs exclude API keys.
-- Live generated reports and database files are excluded from source archives.
-- Pricing is optional local configuration; unknown cost remains `None`, never zero.
+- Python
+- Streamlit
+- Pandas
+- Plotly
+- SQLite
+- GitHub Actions
+- Docker
+- Groq API
+- Gemini API
+- OpenAI Compatible APIs
 
-## Limitations
+---
 
-- Provider adapters are unit-tested with fake SDK clients; live verification depends on your own API keys.
-- SQLite is intended for local and small-team deployments.
-- Pricing data must be supplied locally if you want cost estimates.
-- External hosting and production hardening are deployment responsibilities.
+# 📸 Live Demo
 
-## Resume-Ready Description
+🌐 **Application**
 
-Built a self-hosted multi-provider LLM evaluation platform with Python, Streamlit, SQLAlchemy, Docker, and GitHub Actions. Implemented prompt/model matrix experiments, deterministic and LLM-judge metrics, secure temporary API-key handling, report ZIP generation, SQLite experiment history, quality gates, and CI/CD deployment blocking.
+https://llmevaluationplatform-m.streamlit.app/
+
+---
+
+# 🔮 Future Enhancements
+
+- Authentication
+- Team Workspaces
+- Leaderboards
+- Hugging Face Integration
+- Ollama Support
+- Azure OpenAI
+- AWS Bedrock
+- Cost Dashboard
+- Report Versioning
+- Prompt Library
+- RAG Evaluation Suite
+- Batch Evaluations
+- Benchmark Datasets
+- Human Feedback Integration
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome!
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to GitHub
+5. Open a Pull Request
+
+---
+
+# 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+# 👨‍💻 Author
+
+**Karthik Yadav**
+
+Information Science & Engineering
+
+AI | Machine Learning | Full Stack Development | LLM Engineering
+
+---
+
+⭐ If you found this project useful, consider giving it a Star on GitHub!
