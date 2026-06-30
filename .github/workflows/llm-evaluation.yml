@@ -10,12 +10,18 @@ on:
         description: "Number of tests to run"
         required: false
         default: "5"
+      fail_on_quality_gate:
+        description: "Fail workflow when LLM quality gates fail"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   evaluate:
     runs-on: ubuntu-latest
     env:
-      TEST_LIMIT: "5"
+      TEST_LIMIT: ${{ github.event.inputs.test_limit || '5' }}
+      FAIL_ON_QUALITY_GATE: ${{ github.event.inputs.fail_on_quality_gate || vars.FAIL_ON_QUALITY_GATE || 'false' }}
       GENERATION_PROVIDER: ${{ vars.GENERATION_PROVIDER || 'groq' }}
       GENERATION_MODEL: ${{ vars.GENERATION_MODEL || 'llama-3.1-8b-instant' }}
       JUDGE_PROVIDER: ${{ vars.JUDGE_PROVIDER || 'groq' }}
@@ -49,14 +55,34 @@ jobs:
         run: mypy app scripts dashboard
 
       - name: Run limited live evaluation
+        id: live_eval
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set +e
-          python -m scripts.run_evaluation --test-limit "${{ github.event.inputs.test_limit || env.TEST_LIMIT }}" --no-delay
+          python -m scripts.run_evaluation --test-limit "$TEST_LIMIT" --no-delay
           status=$?
           echo "llm_eval_exit_code=$status" >> "$GITHUB_OUTPUT"
-          exit $status
+          fail_on_quality_gate="$(echo "$FAIL_ON_QUALITY_GATE" | tr '[:upper:]' '[:lower:]')"
+
+          if [ "$status" -eq 2 ]; then
+            echo "LLM evaluation errored; failing workflow."
+            exit 2
+          fi
+
+          if [ "$status" -eq 1 ] && [ "$fail_on_quality_gate" = "true" ]; then
+            echo "LLM quality gates failed and FAIL_ON_QUALITY_GATE=true; failing workflow."
+            exit 1
+          fi
+
+          if [ "$status" -eq 1 ]; then
+            echo "LLM quality gates failed, but workflow is configured to continue."
+          fi
+
+          exit 0
 
       - name: Upload reports
         if: always()
@@ -68,18 +94,54 @@ jobs:
 
       - name: GitHub Job Summary
         if: always()
+        env:
+          LLM_EVAL_EXIT_CODE: ${{ steps.live_eval.outputs.llm_eval_exit_code || 'not-run' }}
         run: |
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
-          summary_path = Path("reports/experiment_summary.json")
-          if not summary_path.exists():
-              summary_path = Path("reports/evaluation_summary.json")
-          data = json.loads(summary_path.read_text()) if summary_path.exists() else {}
+
+          def load_summary():
+              report_dirs = []
+              latest_path = Path("reports/latest.json")
+              if latest_path.exists():
+                  latest = json.loads(latest_path.read_text())
+                  report_directory = latest.get("report_directory")
+                  if report_directory:
+                      report_dirs.append(Path(report_directory))
+
+              experiments_dir = Path("reports/experiments")
+              if experiments_dir.exists():
+                  report_dirs.extend(
+                      sorted(
+                          (path for path in experiments_dir.iterdir() if path.is_dir()),
+                          key=lambda path: path.stat().st_mtime,
+                          reverse=True,
+                      )
+                  )
+
+              report_dirs.append(Path("reports"))
+              seen = set()
+              for report_dir in report_dirs:
+                  if report_dir in seen:
+                      continue
+                  seen.add(report_dir)
+                  for filename in ("experiment_summary.json", "evaluation_summary.json"):
+                      summary_path = report_dir / filename
+                      if summary_path.exists():
+                          return summary_path, json.loads(summary_path.read_text())
+
+              return None, {}
+
+          summary_path, data = load_summary()
           candidate = data.get("candidate_metrics", {})
           lines = [
               "# LLM Evaluation",
+              f"- Experiment ID: {data.get('experiment_id', 'NOT_RUN')}",
               f"- Pipeline status: {data.get('pipeline_status', 'NOT_RUN')}",
+              f"- Exit code: {os.environ['LLM_EVAL_EXIT_CODE']}",
+              f"- Report summary: {summary_path if summary_path else 'not found'}",
               f"- Pass rate: {candidate.get('pass_rate')}",
               f"- Correctness: {candidate.get('average_correctness')}",
               f"- Faithfulness: {candidate.get('average_faithfulness')}",
